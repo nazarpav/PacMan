@@ -42,6 +42,14 @@ public:
 	{
 		return this->direction;
 	}
+	void SetSaveDirection(Direction direction)
+	{
+		this->saveDirection = direction;
+	}
+	Direction GetSaveDirection()
+	{
+		return this->saveDirection;
+	}
 	virtual void FrameFunc(int x, int y)override;
 	Enemy(HGE* hge, std::string Path);
 	virtual~Enemy()override;

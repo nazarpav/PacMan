@@ -28,7 +28,7 @@ void Enemy::FrameFunc(int x, int y)
 
 Enemy::Enemy(HGE* hge,std::string Path) : BaseObject(hge, Path.c_str())
 {
-	Color = hge->Random_Int(1, 4294967295);
+	Color = hge->Random_Int(4278190080, 4294967295);
 	this->textureSize = 40;
 	this->sprite->SetColor(Color);
 	texture2Up = hge->Texture_Load("PacmanTexture/GhostUp.png");

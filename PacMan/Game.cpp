@@ -12,60 +12,69 @@ void Game::Control()
 		player->SetY(0);
 	switch (hge->Input_GetKey())
 	{
-	case HGEK_ESCAPE:
+	case hgeKeyCode_t::HGEK_ESCAPE:
 		isGame = true;
 		break;
-	case HGEK_LEFT:
+	case hgeKeyCode_t::HGEK_LEFT:
 		player->SetDirection(Left);
 		break;
-	case HGEK_RIGHT:
+	case hgeKeyCode_t::HGEK_RIGHT:
 		player->SetDirection(Rights);
 		break;
-	case HGEK_UP:
+	case hgeKeyCode_t::HGEK_UP:
 		player->SetDirection(Up);
 		break;
-	case HGEK_DOWN:
+	case hgeKeyCode_t::HGEK_DOWN:
 		player->SetDirection(Down);
 		break;
 	}
-
-	if (player->GetDirection() == Up)
+	if (hge->Input_KeyDown(hgeKeyCode_t::HGEK_SPACE))
 	{
-		player->SetY(player->GetY() - speed);
+		player->SetSpeed(player->GetSpeed()+player->GetSpeedBoost());
+		player->PlayBoostSound();
+	}
+	else if (hge->Input_KeyUp(hgeKeyCode_t::HGEK_SPACE))
+	{
+		player->SetSpeed(player->GetSpeed() - player->GetSpeedBoost());
+		player->StopBoostSound();
+	}
+	if (player->GetDirection() == Direction::Up)
+	{
+		player->SetY(player->GetY() - player->GetSpeed());
 		for (int i = 0; i < BlockOnMap.size(); i++)
 			if (CheckCollision(player, BlockOnMap[i]))
 			{
-				player->SetY(player->GetY() + speed);
+				player->SetY(player->GetY() + player->GetSpeed());
 				return;
 			}
 	}
-	else if (player->GetDirection() == Down)
+	else if (player->GetDirection() == Direction::Down)
 	{
-		player->SetY(player->GetY() + speed);
+		player->SetY(player->GetY() + player->GetSpeed());
 		for (int i = 0; i < BlockOnMap.size(); i++)
 			if (CheckCollision(player, BlockOnMap[i]))
 			{
-				player->SetY(player->GetY() - speed);
+				player->SetY(player->GetY() - player->GetSpeed());
 				return;
 			}
 	}
-	else if (player->GetDirection() == Left)
+	else if (player->GetDirection() == Direction::Left)
 	{
-		player->SetX(player->GetX() - speed);
+		player->SetX(player->GetX() - player->GetSpeed());
 		for (int i = 0; i < BlockOnMap.size(); i++)
 			if (CheckCollision(player, BlockOnMap[i]))
 			{
-				player->SetX(player->GetX() + speed);
+				player->SetX(player->GetX() + player->GetSpeed());
 				return;
 			}
 	}
-	else if (player->GetDirection() == Rights)
+	else if (player->GetDirection() == Direction::Rights)
 	{
-		player->SetX(player->GetX() + speed);
+		player->SetX(player->GetX() + player->GetSpeed());
 		for (int i = 0; i < BlockOnMap.size(); i++)
 			if (CheckCollision(player, BlockOnMap[i]))
 			{
-				player->SetX(player->GetX() - speed);
+				player->SetX(player->GetX() - player->GetSpeed());
 				return;
 			}
 	}
@@ -86,7 +95,7 @@ void Game::CreateMap()
 		for (int j = 0; j < 41; j++)
 		{
 			if (TileMap[i][j] == '0')
-				BlockOnMap.push_back(new Block(hge,j* TEXTURESIZE, i * TEXTURESIZE));
+				BlockOnMap.push_back(new Block(hge, j * TEXTURESIZE, i * TEXTURESIZE));
 		}
 	}
 }
@@ -127,17 +136,17 @@ bool Game::CheckCollision(BaseObject* obj1, BaseObject* obj2)
 	int f2cy = obj2->GetY() + obj2->GetTextureSize();
 
 	if (
-		f1ax > f2ax&& f1ax <f2cx &&
-		f1ay>f2ay&& f1ay < f2cy
+		f1ax > f2ax && f1ax <f2cx &&
+		f1ay>f2ay && f1ay < f2cy
 		||
-		f1bx > f2ax&& f1bx <f2cx &&
-		f1by>f2ay&& f1by < f2cy
+		f1bx > f2ax && f1bx <f2cx &&
+		f1by>f2ay && f1by < f2cy
 		||
-		f1cx > f2ax&& f1cx <f2cx &&
-		f1cy>f2ay&& f1cy < f2cy
+		f1cx > f2ax && f1cx <f2cx &&
+		f1cy>f2ay && f1cy < f2cy
 		||
-		f1dx > f2ax&& f1dx <f2cx &&
-		f1dy > f2ay&& f1dy < f2cy
+		f1dx > f2ax && f1dx <f2cx &&
+		f1dy > f2ay && f1dy < f2cy
 		)
 		return true;
 
@@ -158,54 +167,114 @@ void Game::FrameFunc()
 			ListEnemy[i]->SetY(1080 - 64);
 		else if (ListEnemy[i]->GetY() > 1080 - TEXTURESIZE)
 			ListEnemy[i]->SetY(0);
-		if (hge->Timer_GetTime() > SaveTimeForMoving + ClockRandomMoving+hge->Random_Float(0.05f,0.1f))
+		if (hge->Timer_GetTime() > SaveTimeForMoving + ClockRandomMoving + hge->Random_Float(0.05f, 0.1f))
 		{
 			SaveTimeForMoving = hge->Timer_GetTime();
 			ListEnemy[i]->SetDirection(RandomEnemyMoving());
 		}
 
-		if (ListEnemy[i]->GetDirection() == Up)
+		if (ListEnemy[i]->GetDirection() == Direction::Up)
 		{
 			ListEnemy[i]->SetY(ListEnemy[i]->GetY() - speed);
 			for (int j = 0; j < BlockOnMap.size(); j++)
 				if (CheckCollision(ListEnemy[i], BlockOnMap[j]))
 				{
 					ListEnemy[i]->SetY(ListEnemy[i]->GetY() + speed);
+					if (player->GetX() > ListEnemy[i]->GetX())
+					{
+						ListEnemy[i]->SetDirection(Direction::Rights);
+					}
+					else 
+					{
+						ListEnemy[i]->SetDirection(Direction::Left);
+					}
+				/*	Direction tmp= RandomEnemyMoving();
+					while (tmp == ListEnemy[i]->GetSaveDirection())
+					{
+						tmp = RandomEnemyMoving();
+					}
+					ListEnemy[i]->SetDirection(tmp);*/
 					return;
 				}
+			ListEnemy[i]->SetSaveDirection(Direction::Up);
 		}
-		else if (ListEnemy[i]->GetDirection() == Down)
+		else if (ListEnemy[i]->GetDirection() == Direction::Down)
 		{
 			ListEnemy[i]->SetY(ListEnemy[i]->GetY() + speed);
 			for (int j = 0; j < BlockOnMap.size(); j++)
 				if (CheckCollision(ListEnemy[i], BlockOnMap[j]))
 				{
 					ListEnemy[i]->SetY(ListEnemy[i]->GetY() - speed);
+					if (player->GetX() > ListEnemy[i]->GetX())
+					{
+						ListEnemy[i]->SetDirection(Direction::Rights);
+					}
+					else
+					{
+						ListEnemy[i]->SetDirection(Direction::Left);
+					}
+					/*Direction tmp = RandomEnemyMoving();
+					while (tmp == ListEnemy[i]->GetSaveDirection())
+					{
+						tmp = RandomEnemyMoving();
+					}
+					ListEnemy[i]->SetDirection(tmp);*/
 					return;
 				}
+			ListEnemy[i]->SetSaveDirection(Direction::Down);
 		}
-		else if (ListEnemy[i]->GetDirection() == Left)
+		else if (ListEnemy[i]->GetDirection() == Direction::Left)
 		{
 			ListEnemy[i]->SetX(ListEnemy[i]->GetX() - speed);
 			for (int j = 0; j < BlockOnMap.size(); j++)
 				if (CheckCollision(ListEnemy[i], BlockOnMap[j]))
 				{
 					ListEnemy[i]->SetX(ListEnemy[i]->GetX() + speed);
+					if (player->GetY() > ListEnemy[i]->GetY())
+					{
+						ListEnemy[i]->SetDirection(Direction::Down);
+					}
+					else
+					{
+						ListEnemy[i]->SetDirection(Direction::Up);
+					}
+				/*	Direction tmp = RandomEnemyMoving();
+					while (tmp == ListEnemy[i]->GetSaveDirection())
+					{
+						tmp = RandomEnemyMoving();
+					}
+					ListEnemy[i]->SetDirection(tmp);*/
 					return;
 				}
+			ListEnemy[i]->SetSaveDirection(Direction::Left);
 		}
-		else if (ListEnemy[i]->GetDirection() == Rights)
+		else if (ListEnemy[i]->GetDirection() == Direction::Rights)
 		{
 			ListEnemy[i]->SetX(ListEnemy[i]->GetX() + speed);
 			for (int j = 0; j < BlockOnMap.size(); j++)
 				if (CheckCollision(ListEnemy[i], BlockOnMap[j]))
 				{
 					ListEnemy[i]->SetX(ListEnemy[i]->GetX() - speed);
+					if (player->GetY() > ListEnemy[i]->GetY())
+					{
+						ListEnemy[i]->SetDirection(Direction::Down);
+					}
+					else
+					{
+						ListEnemy[i]->SetDirection(Direction::Up);
+					}
+				/*	Direction tmp = RandomEnemyMoving();
+					while (tmp == ListEnemy[i]->GetSaveDirection())
+					{
+						tmp = RandomEnemyMoving();
+					}
+					ListEnemy[i]->SetDirection(tmp);*/
 					return;
 				}
+			ListEnemy[i]->SetSaveDirection(Direction::Rights);
 		}
 		ListEnemy[i]->FrameFunc(ListEnemy[i]->GetX(), ListEnemy[i]->GetY());
-	}	
+	}
 }
 
 
@@ -223,12 +292,12 @@ Game::Game(HGE* hge)
 {
 	this->hge = hge;
 	isGame = false;
-	player = new Player(hge,"PacmanTexture/Pacman1.png");
-	player->SetX(48*4);
-	player->SetY(48*4);
+	player = new Player(hge, "PacmanTexture/Pacman1.png");
+	player->SetX(48 * 4);
+	player->SetY(48 * 4);
 	for (size_t i = 0; i < MAXQUANTITYENEMYONMAP; i++)
 	{
-		ListEnemy[i] =new Enemy(hge, "PacmanTexture/GhostUp.png");
+		ListEnemy[i] = new Enemy(hge, "PacmanTexture/GhostUp.png");
 		ListEnemy[i]->SetX(48 * 4);
 		ListEnemy[i]->SetY(48 * 4);
 	}

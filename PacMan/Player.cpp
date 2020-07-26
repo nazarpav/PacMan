@@ -42,6 +42,11 @@ void Player::FrameFunc(int x, int y)
 
 Player::Player(HGE* hge, std::string Path) : Enemy(hge, Path)
 {
+	PacmanSound= hge->Effect_Load("Sounds/pacman_chomp.wav");
+	PacmanSoundBoost = hge->Effect_Load("Sounds/pacman_extrapac.wav");
+	hge->Effect_PlayEx(PacmanSound,50,0,1.0F,true);
+	boostSpeed=3;
+	speed = 2;
 	this->sprite->SetColor(0xFFFFFF00);
 	animation = false;
 	isMaxAnimationSpeed = false;
